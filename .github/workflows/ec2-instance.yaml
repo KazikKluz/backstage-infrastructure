@@ -14,16 +14,13 @@ on:
       instanceType:
         description: 'AWS instance type'
         required: true
-      stack:
-        description: 'Pulumi stack name'
-        required: true
       action:
         description: 'Action to perform (apply/destroy)'
         required: true
 # Shows where to run jobs
 defaults:
   run:
-    working-directory: aws-ec2-pulumi
+    working-directory: ./aws-ec2-pulumi
 # Jobs to be executed in this workflow
 jobs:
   # Job for applying the ec2 instance
@@ -49,7 +46,7 @@ jobs:
       - uses: pulumi/actions@v6
         with:
           command: up
-          stack-name: ${{ github.event.inputs.stack }}
+          stack-name: dev
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           ID_RSA_PUB: ${{ secrets.IDRSAPUB }}
@@ -79,7 +76,6 @@ jobs:
       - uses: pulumi/actions@v6
         with:
           command: destroy
-          stack-name: ${{ github.event.inputs.stack }}
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 #          github.event.inputs.instanceName }} -var awsRegion=${{ github.event.inputs.awsRegion }} -var instanceType=${{ github.event.inputs.instanceType }} -auto-approve
