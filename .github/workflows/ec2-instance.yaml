@@ -47,6 +47,7 @@ jobs:
         with:
           command: up
           stack-name: dev
+          work-dir: ./aws-ec2-pulumi
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           ID_RSA_PUB: ${{ secrets.IDRSAPUB }}
