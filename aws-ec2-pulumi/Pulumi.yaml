@@ -1,0 +1,11 @@
+name: aws-ec2-pulumi
+description: Template for provisioning EC2 machine
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-python

@@ -1,0 +1,82 @@
+# Define the name of the GitHub Action workflow
+name: Create an ec2 instance
+# This workflow is manually triggered using the GitHub Actions UI
+on:
+  workflow_dispatch:
+    # Define inputs that are required for the manual trigger
+    inputs:
+      instanceName:
+        description: 'Name of the AWS Instance' # What's this input for?
+        required: true # Is it optional or required?
+      awsRegion:
+        description: 'AWS Region for the instance'
+        required: true
+      instanceType:
+        description: 'AWS instance type'
+        required: true
+      action:
+        description: 'Action to perform (apply/destroy)'
+        required: true
+# Shows where to run jobs
+defaults:
+  run:
+    working-directory: aws-ec2-pulumi
+# Jobs to be executed in this workflow
+jobs:
+  # Job for applying the ec2 instance
+  apply_ec2:
+    # Use the latest Ubuntu runner
+    runs-on: ubuntu-latest
+
+    # Execute this step only if the action input is "apply"
+    if: ${{ github.event.inputs.action == 'apply' }}
+    # Define the steps for this job
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.12
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-region: ${{ github.event.inputs.awsRegion }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - run: pip install -r requirements.txt
+      - uses: pulumi/actions@v3
+        with:
+          command: up
+          stack-name: dev
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          ID_RSA_PUB: ${{ secrets.IDRSAPUB }}
+          INSTANCE_TYPE: ${{ github.event.inputs.instanceType }}
+
+  #          github.event.inputs.instanceName }} -var awsRegion=${{ github.event.inputs.awsRegion }} -var instanceType=${{ github.event.inputs.instanceType }} -auto-approve
+
+  # Destroying the  ec2 instance
+  destroy_instance:
+    runs-on: ubuntu-latest
+
+    # Execute this job only if the action input is "destroy"
+    if: ${{ github.event.inputs.action == 'destroy' }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.12
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-region: ${{ github.event.inputs.awsRegion }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - run: pip install -r requirements.txt
+      - uses: pulumi/actions@v3
+        with:
+          command: destroy
+          stack-name: dev # When using an individual account, only use stack-name.
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+#          github.event.inputs.instanceName }} -var awsRegion=${{ github.event.inputs.awsRegion }} -var instanceType=${{ github.event.inputs.instanceType }} -auto-approve

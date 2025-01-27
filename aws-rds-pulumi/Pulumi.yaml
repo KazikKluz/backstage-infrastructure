@@ -1,0 +1,11 @@
+name: aws-rds-pulumi
+description: Template for provisioning RDS instance
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-python
