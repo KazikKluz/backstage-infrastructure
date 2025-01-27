@@ -56,7 +56,7 @@ jobs:
         with:
           command: up
           stack-name: dev
-          work_dir: ./aws-rds-pulumi
+          work-dir: ./aws-rds-pulumi
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           INSTANCE_TYPE: ${{ github.event.inputs.instanceType }}
