@@ -23,6 +23,9 @@ on:
       instancePassword:
         description: 'Password needed for loggin into database'
         required: true
+      instanceEngine:
+        description: 'Relational database engine'
+        required: true
       action:
         description: 'Action to perform (apply/destroy)'
         required: true
