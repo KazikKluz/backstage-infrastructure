@@ -1,12 +1,18 @@
+import os
+
 import pulumi
 import pulumi_aws as aws
 import pulumi_eks as eks
 from pulumi_aws import ec2, iam
 
 # Configuration
-config = pulumi.Config()
-project_name = pulumi.get_project()
-stack_name = pulumi.get_stack()
+
+cluster_name = os.environ.get("CLUSTER_NAME")
+instance_type = os.environ.get("INSTANCE_TYPE")
+instance_storage = os.environ.get("INSTANCE_STORAGE")
+instance_password = os.environ.get("INSTANCE_PASSWORD")
+instance_username = os.environ.get("INSTANCE_USERNAME")
+instance_region = os.environ.get("INSTANCE_REGION")
 
 # VPC Configuration
 vpc = ec2.Vpc(
@@ -16,7 +22,7 @@ vpc = ec2.Vpc(
     enable_dns_hostnames=True,
     enable_dns_support=True,
     tags={
-        "Name": f"{project_name}-vpc-{stack_name}",
+        "Name": f"{cluster_name}-vpc",
     },
 )
 
@@ -28,7 +34,7 @@ public_subnet_1 = ec2.Subnet(
     availability_zone="us-west-2a",
     map_public_ip_on_launch=True,
     tags={
-        "Name": f"{project_name}-public-subnet-1-{stack_name}",
+        "Name": f"{cluster_name}-public-subnet-1",
         "kubernetes.io/role/elb": "1",
     },
 )
@@ -40,7 +46,7 @@ public_subnet_2 = ec2.Subnet(
     availability_zone="us-west-2b",
     map_public_ip_on_launch=True,
     tags={
-        "Name": f"{project_name}-public-subnet-2-{stack_name}",
+        "Name": f"{cluster_name}-public-subnet-2",
         "kubernetes.io/role/elb": "1",
     },
 )
@@ -52,7 +58,7 @@ private_subnet_1 = ec2.Subnet(
     cidr_block="10.0.3.0/24",
     availability_zone="us-west-2a",
     tags={
-        "Name": f"{project_name}-private-subnet-1-{stack_name}",
+        "Name": f"{cluster_name}-private-subnet-1",
         "kubernetes.io/role/internal-elb": "1",
     },
 )

@@ -3,7 +3,7 @@
 import os
 
 import pulumi
-from pulumi_aws import ec2, rds, s3
+from pulumi_aws import ec2, rds
 
 instance_name = os.environ.get("INSTANCE_NAME")
 instance_type = os.environ.get("INSTANCE_TYPE")
@@ -11,9 +11,9 @@ instance_storage = os.environ.get("INSTANCE_STORAGE")
 instance_password = os.environ.get("INSTANCE_PASSWORD")
 instance_username = os.environ.get("INSTANCE_USERNAME")
 instance_region = os.environ.get("INSTANCE_REGION")
+instance_engine = os.environ.get("INSTANCE_ENGINE")
+local_ip = os.environ.get("LOCAL_IP")
 
-# Create an AWS resource (S3 Bucket)
-bucket = s3.BucketV2(f"{instance_name}-bucket")
 
 # Create a VPC for the RDS instance
 vpc = ec2.Vpc(
@@ -24,12 +24,34 @@ vpc = ec2.Vpc(
     tags={"Name": f"{instance_name}-vpc"},
 )
 
+# Create an Internet Gateway
+internet_gateway = ec2.InternetGateway(
+    "my-internet-gateway",
+    vpc_id=vpc.id,
+    tags={"Name": f"{instance_name}-internet-gateway"},
+)
+
+# Create a route table
+route_table = ec2.RouteTable(
+    "my-route-table",
+    vpc_id=vpc.id,
+    routes=[
+        {
+            "cidr_block": "0.0.0.0/0",
+            "gateway_id": internet_gateway.id,
+        }
+    ],
+    tags={"Name": f"{instance_name}-route-table"},
+)
+
+
 # Create subnets in different availability zones
 subnet1 = ec2.Subnet(
     "subnet-1",
     vpc_id=vpc.id,
     cidr_block="10.0.1.0/24",
-    availability_zone="eu-west-1a",  # Change this according to your region
+    availability_zone={f"{instance_region}a"},  # Change this according to your region
+    map_public_ip_on_launch=True,
     tags={"Name": f"{instance_name}-rds-subnet-1"},
 )
 
@@ -37,8 +59,22 @@ subnet2 = ec2.Subnet(
     "subnet-2",
     vpc_id=vpc.id,
     cidr_block="10.0.2.0/24",
-    availability_zone="eu-west-1b",  # Change this according to your region
+    availability_zone={f"{instance_region}b"},  # Change this according to your region
+    map_public_ip_on_launch=True,
     tags={"Name": f"{instance_name}-rds-subnet-2"},
+)
+
+# Associate the route table with the subnets
+route_table_association1 = ec2.RouteTableAssociation(
+    "rt-association1",
+    subnet_id=subnet1.id,
+    route_table_id=route_table.id,
+)
+
+route_table_association2 = ec2.RouteTableAssociation(
+    "rt-association2",
+    subnet_id=subnet2.id,
+    route_table_id=route_table.id,
 )
 
 # Create a subnet group for RDS
@@ -59,7 +95,7 @@ db_security_group = ec2.SecurityGroup(
             "from_port": 3306,  # MySQL default port
             "to_port": 3306,
             # Be more restrictive in production
-            "cidr_blocks": ["0.0.0.0/0"],
+            "cidr_blocks": [f"{local_ip}/32"],
         }
     ],
     tags={"Name": f"{instance_name}-db-security-group"},
@@ -69,10 +105,10 @@ db_security_group = ec2.SecurityGroup(
 db_instance = rds.Instance(
     f"{instance_name}-db-instance",
     engine="mysql",
-    instance_class="db.t4g.micro",
+    instance_class=instance_type,
     allocated_storage=instance_storage,  # type: ignore
-    username="admin",
-    password="your-password-here",  # Use pulumi config for sensitive data
+    username=instance_username,
+    password=instance_password,
     db_subnet_group_name=db_subnet_group.name,
     vpc_security_group_ids=[db_security_group.id],
     skip_final_snapshot=True,  # For development only, not recommended for production
@@ -81,6 +117,5 @@ db_instance = rds.Instance(
 
 
 # Export the necessary values
-pulumi.export("bucket_name", bucket.id)
 pulumi.export("rds_endpoint", db_instance.endpoint)
 pulumi.export("rds_port", db_instance.port)
