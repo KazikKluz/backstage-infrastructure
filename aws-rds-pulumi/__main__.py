@@ -24,7 +24,6 @@ vpc = ec2.Vpc(
     tags={"Name": f"{instance_name}-vpc"},
 )
 
-
 # Create subnets in different availability zones
 subnet1 = ec2.Subnet(
     "subnet-1",

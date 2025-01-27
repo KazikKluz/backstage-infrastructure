@@ -1,0 +1,11 @@
+name: aws-eks-pulumi
+description: Pulumi program for provisioning EKS cluster on AWS
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-python
