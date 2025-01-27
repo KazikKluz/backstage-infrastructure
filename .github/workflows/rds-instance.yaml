@@ -27,6 +27,9 @@ on:
         description: 'Action to perform (apply/destroy)'
         required: true
 
+defaults:
+  run:
+    working-directory: aws-rds-pulumi
 # Jobs to be executed in this workflow
 jobs:
   # Job for applying the ec2 instance
