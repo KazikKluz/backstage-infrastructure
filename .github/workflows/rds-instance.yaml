@@ -33,7 +33,7 @@ defaults:
 # Jobs to be executed in this workflow
 jobs:
   # Job for applying the ec2 instance
-  apply_ec2:
+  create_rds:
     # Use the latest Ubuntu runner
     runs-on: ubuntu-latest
 
@@ -46,7 +46,7 @@ jobs:
         with:
           python-version: 3.12
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-region: ${{ github.event.inputs.awsRegion }}
@@ -55,7 +55,8 @@ jobs:
       - uses: pulumi/actions@v6
         with:
           command: up
-          stack-name: test
+          stack-name: dev
+          work_dir: ./aws-rds-pulumi
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           INSTANCE_TYPE: ${{ github.event.inputs.instanceType }}
@@ -68,7 +69,7 @@ jobs:
   #          github.event.inputs.instanceName }} -var awsRegion=${{ github.event.inputs.awsRegion }} -var instanceType=${{ github.event.inputs.instanceType }} -auto-approve
 
   # Destroying the  ec2 instance
-  destroy_instance:
+  destroy_rds:
     runs-on: ubuntu-latest
 
     # Execute this job only if the action input is "destroy"
@@ -80,7 +81,7 @@ jobs:
         with:
           python-version: 3.12
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-region: ${{ github.event.inputs.awsRegion }}
@@ -89,7 +90,8 @@ jobs:
       - uses: pulumi/actions@v6
         with:
           command: destroy
-          stack-name: dev # When using an individual account, only use stack-name.
+          stack-name: dev
+          work-dir: ./aws-rds-pulumi
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 #          github.event.inputs.instanceName }} -var awsRegion=${{ github.event.inputs.awsRegion }} -var instanceType=${{ github.event.inputs.instanceType }} -auto-approve
