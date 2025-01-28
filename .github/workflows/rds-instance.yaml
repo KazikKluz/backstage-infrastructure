@@ -27,7 +27,7 @@ on:
         description: 'Relational database engine'
         required: true
       localIp:
-        description: 'Local IP for remote access'
+        description: 'Local IP address'
         required: true
       action:
         description: 'Action to perform (apply/destroy)'
@@ -71,6 +71,7 @@ jobs:
           INSTANCE_USERNAME: ${{  github.event.inputs.instanceUsername }}
           INSTANCE_PASSWORD: ${{  github.event.inputs.instancePassword }}
           INSTANCE_ENGINE: ${{ github.event.inputs.instanceEngine }}
+          INSTANCE_REGION: ${{ github.event.inputs.awsRegion }}
           LOCAL_IP: ${{ github.event.inputs.localIp }}
 
   # Destroying the  ec2 instance
@@ -99,3 +100,5 @@ jobs:
           work-dir: ./aws-rds-pulumi
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+#          github.event.inputs.instanceName }} -var awsRegion=${{ github.event.inputs.awsRegion }} -var instanceType=${{ github.event.inputs.instanceType }} -auto-approve
+
