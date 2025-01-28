@@ -1,9 +1,8 @@
 import os
 
 import pulumi
-import pulumi_aws as aws
 import pulumi_eks as eks
-from pulumi_aws import ec2, iam
+from pulumi_aws import ec2
 
 # Configuration
 
@@ -69,7 +68,7 @@ private_subnet_2 = ec2.Subnet(
     cidr_block="10.0.4.0/24",
     availability_zone="us-west-2b",
     tags={
-        "Name": f"{project_name}-private-subnet-2-{stack_name}",
+        "Name": f"{cluster_name}-private-subnet-2",
         "kubernetes.io/role/internal-elb": "1",
     },
 )
@@ -79,7 +78,7 @@ igw = ec2.InternetGateway(
     "vpc-igw",
     vpc_id=vpc.id,
     tags={
-        "Name": f"{project_name}-igw-{stack_name}",
+        "Name": f"{cluster_name}-igw",
     },
 )
 
@@ -94,7 +93,7 @@ public_rt = ec2.RouteTable(
         ),
     ],
     tags={
-        "Name": f"{project_name}-public-rt-{stack_name}",
+        "Name": f"{cluster_name}-public-rt",
     },
 )
 
@@ -127,7 +126,7 @@ cluster = eks.Cluster(
     max_size=3,
     node_associate_public_ip_address=False,
     tags={
-        "Name": f"{project_name}-eks-cluster-{stack_name}",
+        "Name": f"{cluster_name}-eks-cluster",
     },
 )
 

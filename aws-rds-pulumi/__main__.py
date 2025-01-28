@@ -50,7 +50,7 @@ subnet1 = ec2.Subnet(
     "subnet-1",
     vpc_id=vpc.id,
     cidr_block="10.0.1.0/24",
-    availability_zone={f"{instance_region}a"},  # Change this according to your region
+    availability_zone=f"{instance_region}a",  # Change this according to your region
     map_public_ip_on_launch=True,
     tags={"Name": f"{instance_name}-rds-subnet-1"},
 )
@@ -59,7 +59,7 @@ subnet2 = ec2.Subnet(
     "subnet-2",
     vpc_id=vpc.id,
     cidr_block="10.0.2.0/24",
-    availability_zone={f"{instance_region}b"},  # Change this according to your region
+    availability_zone=f"{instance_region}b",  # Change this according to your region
     map_public_ip_on_launch=True,
     tags={"Name": f"{instance_name}-rds-subnet-2"},
 )
