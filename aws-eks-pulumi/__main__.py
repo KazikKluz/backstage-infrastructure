@@ -8,10 +8,10 @@ from pulumi_aws import ec2
 
 cluster_name = os.environ.get("CLUSTER_NAME")
 instance_type = os.environ.get("INSTANCE_TYPE")
-instance_storage = os.environ.get("INSTANCE_STORAGE")
-instance_password = os.environ.get("INSTANCE_PASSWORD")
-instance_username = os.environ.get("INSTANCE_USERNAME")
-instance_region = os.environ.get("INSTANCE_REGION")
+cluster_region = os.environ.get("CLUSTER_REGION")
+desired_capacity = os.environ.get("DESIRED_CAPACITY")
+min_size = os.environ.get("MIN_SIZE")
+max_size = os.environ.get("MAX_SIZE")
 
 # VPC Configuration
 vpc = ec2.Vpc(
@@ -30,20 +30,19 @@ public_subnet_1 = ec2.Subnet(
     "public-subnet-1",
     vpc_id=vpc.id,
     cidr_block="10.0.1.0/24",
-    availability_zone="us-west-2a",
+    availability_zone=f"{cluster_region}a",
     map_public_ip_on_launch=True,
     tags={
         "Name": f"{cluster_name}-public-subnet-1",
         "kubernetes.io/role/elb": "1",
     },
-
 )
 
 public_subnet_2 = ec2.Subnet(
     "public-subnet-2",
     vpc_id=vpc.id,
     cidr_block="10.0.2.0/24",
-    availability_zone="us-west-2b",
+    availability_zone=f"{cluster_region}b",
     map_public_ip_on_launch=True,
     tags={
         "Name": f"{cluster_name}-public-subnet-2",
@@ -56,7 +55,7 @@ private_subnet_1 = ec2.Subnet(
     "private-subnet-1",
     vpc_id=vpc.id,
     cidr_block="10.0.3.0/24",
-    availability_zone="us-west-2a",
+    availability_zone=f"{cluster_region}a",
     tags={
         "Name": f"{cluster_name}-private-subnet-1",
         "kubernetes.io/role/internal-elb": "1",
@@ -67,7 +66,7 @@ private_subnet_2 = ec2.Subnet(
     "private-subnet-2",
     vpc_id=vpc.id,
     cidr_block="10.0.4.0/24",
-    availability_zone="us-west-2b",
+    availability_zone=f"{cluster_region}b",
     tags={
         "Name": f"{cluster_name}-private-subnet-2",
         "kubernetes.io/role/internal-elb": "1",
@@ -121,10 +120,10 @@ cluster = eks.Cluster(
         private_subnet_1.id,
         private_subnet_2.id,
     ],
-    instance_type="t3.medium",
-    desired_capacity=2,
-    min_size=1,
-    max_size=3,
+    instance_type=instance_type,
+    desired_capacity=desired_capacity,
+    min_size=min_size,
+    max_size=max_size,
     node_associate_public_ip_address=False,
     tags={
         "Name": f"{cluster_name}-eks-cluster",
