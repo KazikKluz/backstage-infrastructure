@@ -113,6 +113,7 @@ db_instance = rds.Instance(
     vpc_security_group_ids=[db_security_group.id],
     skip_final_snapshot=True,  # For development only, not recommended for production
     tags={"Name": f"{instance_name}-db-instance"},
+    publicly_accessible=True,
 )
 
 
