@@ -1,7 +1,7 @@
 import os
 
 import pulumi
-from pulumi_aws import ec2, eks
+import pulumi_aws as aws
 
 # Configuration
 
@@ -13,7 +13,7 @@ min_size = os.environ.get("MIN_SIZE")
 max_size = os.environ.get("MAX_SIZE")
 
 # VPC Configuration
-vpc = ec2.Vpc(
+vpc = aws.ec2.Vpc(
     "eks-vpc",
     cidr_block="10.0.0.0/16",
     instance_tenancy="default",
@@ -25,7 +25,7 @@ vpc = ec2.Vpc(
 )
 
 # Create public subnets
-public_subnet_1 = ec2.Subnet(
+public_subnet_1 = aws.ec2.Subnet(
     "public-subnet-1",
     vpc_id=vpc.id,
     cidr_block="10.0.1.0/24",
@@ -37,7 +37,7 @@ public_subnet_1 = ec2.Subnet(
     },
 )
 
-public_subnet_2 = ec2.Subnet(
+public_subnet_2 = aws.ec2.Subnet(
     "public-subnet-2",
     vpc_id=vpc.id,
     cidr_block="10.0.2.0/24",
@@ -50,7 +50,7 @@ public_subnet_2 = ec2.Subnet(
 )
 
 # Create private subnets
-private_subnet_1 = ec2.Subnet(
+private_subnet_1 = aws.ec2.Subnet(
     "private-subnet-1",
     vpc_id=vpc.id,
     cidr_block="10.0.3.0/24",
@@ -61,7 +61,7 @@ private_subnet_1 = ec2.Subnet(
     },
 )
 
-private_subnet_2 = ec2.Subnet(
+private_subnet_2 = aws.ec2.Subnet(
     "private-subnet-2",
     vpc_id=vpc.id,
     cidr_block="10.0.4.0/24",
@@ -73,7 +73,7 @@ private_subnet_2 = ec2.Subnet(
 )
 
 # Create Internet Gateway
-igw = ec2.InternetGateway(
+igw = aws.ec2.InternetGateway(
     "vpc-igw",
     vpc_id=vpc.id,
     tags={
@@ -82,11 +82,11 @@ igw = ec2.InternetGateway(
 )
 
 # Create public route table
-public_rt = ec2.RouteTable(
+public_rt = aws.ec2.RouteTable(
     "public-rt",
     vpc_id=vpc.id,
     routes=[
-        ec2.RouteTableRouteArgs(
+        aws.ec2.RouteTableRouteArgs(
             cidr_block="0.0.0.0/0",
             gateway_id=igw.id,
         ),
@@ -97,19 +97,20 @@ public_rt = ec2.RouteTable(
 )
 
 # Associate public subnets with public route table
-public_subnet_1_rta = ec2.RouteTableAssociation(
+public_subnet_1_rta = aws.ec2.RouteTableAssociation(
     "public-subnet-1-rta",
     subnet_id=public_subnet_1.id,
     route_table_id=public_rt.id,
 )
 
-public_subnet_2_rta = ec2.RouteTableAssociation(
+public_subnet_2_rta = aws.ec2.RouteTableAssociation(
     "public-subnet-2-rta",
     subnet_id=public_subnet_2.id,
     route_table_id=public_rt.id,
 )
 
-cluster = eks.Cluster(
+
+cluster = aws.eks.Cluster(
     "eks-cluster",
     vpc_id=vpc.id,
     subnet_ids=[
