@@ -50,29 +50,6 @@ public_subnet_2 = aws.ec2.Subnet(
     },
 )
 
-# Create private subnets
-private_subnet_1 = aws.ec2.Subnet(
-    "private-subnet-1",
-    vpc_id=vpc.id,
-    cidr_block="10.0.3.0/24",
-    availability_zone=f"{cluster_region}a",
-    tags={
-        "Name": f"{cluster_name}-private-subnet-1",
-        "kubernetes.io/role/internal-elb": "1",
-    },
-)
-
-private_subnet_2 = aws.ec2.Subnet(
-    "private-subnet-2",
-    vpc_id=vpc.id,
-    cidr_block="10.0.4.0/24",
-    availability_zone=f"{cluster_region}b",
-    tags={
-        "Name": f"{cluster_name}-private-subnet-2",
-        "kubernetes.io/role/internal-elb": "1",
-    },
-)
-
 # Create Internet Gateway
 igw = aws.ec2.InternetGateway(
     "vpc-igw",
@@ -150,8 +127,6 @@ cluster = aws.eks.Cluster(
         subnet_ids=[
             public_subnet_1.id,
             public_subnet_2.id,
-            private_subnet_1.id,
-            private_subnet_2.id,
         ],
     ),
     tags={
@@ -203,8 +178,8 @@ node_group = aws.eks.NodeGroup(
     node_group_name=f"{cluster_name}-node-group",
     node_role_arn=node_group_role.arn,
     subnet_ids=[
-        private_subnet_1.id,
-        private_subnet_2.id,
+        public_subnet_1.id,
+        public_subnet_2.id,
     ],
     scaling_config=aws.eks.NodeGroupScalingConfigArgs(
         desired_size=desired_capacity,
@@ -212,6 +187,10 @@ node_group = aws.eks.NodeGroup(
         min_size=min_size,
     ),
     instance_types=[instance_type],
+    remote_access=aws.eks.NodeGroupRemoteAccessArgs(
+        ec2_ssh_key=None,
+        source_security_group_ids=None,
+    ),
     tags={
         "Name": f"{cluster_name}-node-group",
     },

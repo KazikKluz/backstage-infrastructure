@@ -1,0 +1,11 @@
+name: azure-vm-pulumi
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+description: azure vm that takes private key from this machine to use it for ssh remote access
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: https://www.pulumi.com/ai/api/project/983742ca-4a2c-4709-8fd9-355ddc74d944.zip
