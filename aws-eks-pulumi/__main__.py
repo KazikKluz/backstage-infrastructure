@@ -1,4 +1,5 @@
 import os
+import json
 
 import pulumi
 import pulumi_aws as aws
@@ -109,26 +110,154 @@ public_subnet_2_rta = aws.ec2.RouteTableAssociation(
     route_table_id=public_rt.id,
 )
 
+# Create IAM role for EKS Cluster
+eks_cluster_role = aws.iam.Role(
+    "eks-cluster-role",
+    assume_role_policy="""{
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": "sts:AssumeRole",
+                "Principal": {
+                    "Service": "eks.amazonaws.com"
+                },
+                "Effect": "Allow",
+                "Sid": ""
+            }
+        ]
+    }"""
+)
 
+# Attach required policies to cluster role
+aws.iam.RolePolicyAttachment(
+    "eks-cluster-policy",
+    policy_arn="arn:aws:iam::aws:policy/AmazonEKSClusterPolicy",
+    role=eks_cluster_role.name,
+)
+
+aws.iam.RolePolicyAttachment(
+    "eks-service-policy",
+    policy_arn="arn:aws:iam::aws:policy/AmazonEKSServicePolicy",
+    role=eks_cluster_role.name,
+)
+
+# Create EKS Cluster
 cluster = aws.eks.Cluster(
     "eks-cluster",
-    vpc_id=vpc.id,
-    subnet_ids=[
-        public_subnet_1.id,
-        public_subnet_2.id,
-        private_subnet_1.id,
-        private_subnet_2.id,
-    ],
-    instance_type=instance_type,
-    desired_capacity=desired_capacity,
-    min_size=min_size,
-    max_size=max_size,
-    node_associate_public_ip_address=False,
+    name=cluster_name,
+    role_arn=eks_cluster_role.arn,
+    vpc_config=aws.eks.ClusterVpcConfigArgs(
+        subnet_ids=[
+            public_subnet_1.id,
+            public_subnet_2.id,
+            private_subnet_1.id,
+            private_subnet_2.id,
+        ],
+    ),
     tags={
         "Name": f"{cluster_name}-eks-cluster",
     },
 )
 
+# Create IAM role for Node Group
+node_group_role = aws.iam.Role(
+    "eks-node-group-role",
+    assume_role_policy="""{
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": "sts:AssumeRole",
+                "Principal": {
+                    "Service": "ec2.amazonaws.com"
+                },
+                "Effect": "Allow",
+                "Sid": ""
+            }
+        ]
+    }"""
+)
+
+# Attach required policies to node group role
+aws.iam.RolePolicyAttachment(
+    "eks-worker-node-policy",
+    policy_arn="arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy",
+    role=node_group_role.name,
+)
+
+aws.iam.RolePolicyAttachment(
+    "eks-cni-policy",
+    policy_arn="arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy",
+    role=node_group_role.name,
+)
+
+aws.iam.RolePolicyAttachment(
+    "eks-container-registry-policy",
+    policy_arn="arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly",
+    role=node_group_role.name,
+)
+
+# Create EKS Node Group
+node_group = aws.eks.NodeGroup(
+    "eks-node-group",
+    cluster_name=cluster.name,
+    node_group_name=f"{cluster_name}-node-group",
+    node_role_arn=node_group_role.arn,
+    subnet_ids=[
+        private_subnet_1.id,
+        private_subnet_2.id,
+    ],
+    scaling_config=aws.eks.NodeGroupScalingConfigArgs(
+        desired_size=desired_capacity,
+        max_size=max_size,
+        min_size=min_size,
+    ),
+    instance_types=[instance_type],
+    tags={
+        "Name": f"{cluster_name}-node-group",
+    },
+)
 
 # Export the cluster's kubeconfig
-pulumi.export("kubeconfig", cluster.kubeconfig)
+
+kubeconfig = pulumi.Output.all(cluster.endpoint, cluster.certificate_authority.data, cluster.name).apply(
+    lambda args: json.dumps({
+        "apiVersion": "v1",
+        "clusters": [{
+            "cluster": {
+                "server": args[0],
+                "certificate-authority-data": args[1]
+            },
+            "name": "kubernetes",
+        }],
+        "contexts": [{
+            "context": {
+                "cluster": "kubernetes",
+                "user": "aws",
+            },
+            "name": "aws",
+        }],
+        "current-context": "aws",
+        "kind": "Config",
+        "users": [{
+            "name": "aws",
+            "user": {
+                "exec": {
+                    "apiVersion": "client.authentication.k8s.io/v1beta1",
+                    "command": "aws",
+                    "args": [
+                        "eks",
+                        "get-token",
+                        "--cluster-name",
+                        args[2],
+                    ],
+                },
+            },
+        }],
+    })
+)
+
+# Add these exports
+pulumi.export("cluster_name", cluster.name)
+pulumi.export("cluster_endpoint", cluster.endpoint)
+pulumi.export("cluster_ca_data", cluster.certificate_authority.data)
+pulumi.export("kubeconfig", kubeconfig)
