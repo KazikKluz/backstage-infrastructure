@@ -1,8 +1,7 @@
 import os
 
 import pulumi
-import pulumi_eks as eks
-from pulumi_aws import ec2
+from pulumi_aws import ec2, eks
 
 # Configuration
 
@@ -110,7 +109,6 @@ public_subnet_2_rta = ec2.RouteTableAssociation(
     route_table_id=public_rt.id,
 )
 
-# Create EKS Cluster
 cluster = eks.Cluster(
     "eks-cluster",
     vpc_id=vpc.id,
@@ -129,6 +127,7 @@ cluster = eks.Cluster(
         "Name": f"{cluster_name}-eks-cluster",
     },
 )
+
 
 # Export the cluster's kubeconfig
 pulumi.export("kubeconfig", cluster.kubeconfig)
