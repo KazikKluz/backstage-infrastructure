@@ -14,7 +14,7 @@ on:
       instanceType:
         description: 'Azure instance type'
         required: true
-      groupName:
+      resourceGroupName:
         description: 'Azure resource group name'
         required: true
       action:
@@ -52,7 +52,7 @@ jobs:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           ID_RSA_PUB: ${{ secrets.IDRSAPUB }}
           INSTANCE_TYPE: ${{ github.event.inputs.instanceType }}
-          GROUP_NAME: ${{ github.event.inputs.resourceGroup }}
+          RESOURCE_GROUP_NAME: ${{ github.event.inputs.resourceGroupName }}
           INSTANCE_LOCATION: ${{ github.event.inputs.instanceLocation }}
 
   #          github.event.inputs.instanceName }} -var awsRegion=${{ github.event.inputs.awsRegion }} -var instanceType=${{ github.event.inputs.instanceType }} -auto-approve
