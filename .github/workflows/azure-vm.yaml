@@ -1,0 +1,81 @@
+# Define the name of the GitHub Action workflow
+name: Create an ec2 instance
+# This workflow is manually triggered using the GitHub Actions UI
+on:
+  workflow_dispatch:
+    # Define inputs that are required for the manual trigger
+    inputs:
+      instanceName:
+        description: 'Name of the AWS Instance' # What's this input for?
+        required: true # Is it optional or required?
+      instanceLocation:
+        description: 'Geographical location for the instance'
+        required: true
+      instanceType:
+        description: 'Azure instance type'
+        required: true
+      groupName:
+        description: 'Azure resource group name'
+        required: true
+      action:
+        description: 'Action to perform (apply/destroy)'
+        required: true
+# Shows where to run jobs
+defaults:
+  run:
+    working-directory: ./azure-vm-pulumi
+# Jobs to be executed in this workflow
+jobs:
+  apply_vm:
+    # Use the latest Ubuntu runner
+    runs-on: ubuntu-latest
+
+    # Execute this step only if the action input is "apply"
+    if: ${{ github.event.inputs.action == 'apply' }}
+    # Define the steps for this job
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: login to azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - run: pip install -r requirements.txt
+      - uses: pulumi/actions@v6
+        with:
+          command: up
+          stack-name: dev
+          work-dir: ./azure-vm-pulumi
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          ID_RSA_PUB: ${{ secrets.IDRSAPUB }}
+          INSTANCE_TYPE: ${{ github.event.inputs.instanceType }}
+
+  #          github.event.inputs.instanceName }} -var awsRegion=${{ github.event.inputs.awsRegion }} -var instanceType=${{ github.event.inputs.instanceType }} -auto-approve
+
+  # Destroying the  ec2 instance
+  destroy_instance:
+    runs-on: ubuntu-latest
+
+    # Execute this job only if the action input is "destroy"
+    if: ${{ github.event.inputs.action == 'destroy' }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - run: pip install -r requirements.txt
+      - uses: pulumi/actions@v6
+        with:
+          command: destroy
+          stack-name: dev
+          work-dir: ./azure-vm-pulumi
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
