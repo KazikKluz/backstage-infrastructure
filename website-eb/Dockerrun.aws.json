@@ -1,0 +1,1 @@
+{"AWSEBDockerrunVersion": "1", "Image": {"Name": "x00192532/natours", "Update": "true"}, "Ports": [{"ContainerPort": 3000}], "Logging": "/var/log/app"}

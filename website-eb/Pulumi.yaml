@@ -1,0 +1,11 @@
+name: website-eb
+description: Deploys contenerized web app on Elastic Beanstalk
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-python

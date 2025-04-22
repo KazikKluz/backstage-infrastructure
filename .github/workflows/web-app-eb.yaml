@@ -1,0 +1,95 @@
+name: Deploy Web App to Elastic Beanstalk
+
+on:
+  workflow_dispatch:
+    # Define inputs that are required for the manual trigger
+    inputs:
+      name:
+        description: 'Name of the Web App' # What's this input for?
+        required: true # Is it optional or required?
+      environmentName:
+        description: 'Name of the environment'
+        required: true
+      dockerImage:
+        description: 'Docker image name'
+        required: true
+      region:
+        description: 'AWS Region for the RDS Instance'
+        required: true
+      port:
+        description: 'Port for the RDS Instance'
+        required: true
+      asgMinSize:
+        description: 'Minimum size of the Auto Scaling Group'
+        required: true
+      asgMaxSize:
+        description: 'Maximum size of the Auto Scaling Group'
+        required: true
+      action:
+        description: 'Action to perform (apply/destroy)'
+        required: true
+# Shows where to run jobs
+defaults:
+  run:
+    working-directory: ./website-eb
+# Jobs to be executed in this workflow
+jobs:
+  deploy_web_app:
+    # Use the latest Ubuntu runner
+    runs-on: ubuntu-latest
+
+    # Execute this step only if the action input is "apply"
+    if: ${{ github.event.inputs.action == 'apply' }}
+    # Define the steps for this job
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-region: ${{ github.event.inputs.region }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - run: pip install -r requirements.txt
+      - uses: pulumi/actions@v6
+        with:
+          command: up
+          stack-name: dev
+          work-dir: ./website-eb
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          NAME: ${{ github.event.inputs.name }}
+          ENVIRONMENT_NAME: ${{ github.event.inputs.environmentName }}
+          DOCKER_IMAGE: ${{ github.event.inputs.dockerImage }}
+          REGION: ${{ github.event.inputs.region }}
+          PORT: ${{ github.event.inputs.port }}
+          ASG_MIN_SIZE: ${{ github.event.inputs.asgMinSize }}
+          ASG_MAX_SIZE: ${{ github.event.inputs.asgMaxSize }}
+
+  destroy_deployment:
+    runs-on: ubuntu-latest
+
+    # Execute this job only if the action input is "destroy"
+    if: ${{ github.event.inputs.action == 'destroy' }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-region: ${{ github.event.inputs.region }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - run: pip install -r requirements.txt
+      - uses: pulumi/actions@v6
+        with:
+          command: destroy
+          stack-name: dev
+          work-dir: ./website-eb
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}

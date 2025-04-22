@@ -1,0 +1,23 @@
+name: Publish TechDocs
+on:
+  push:
+    branches: [main]
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install techdocs-cli
+        run: npm install -g @techdocs/cli
+      - name: Generate and Publish Docs
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'eu-west-1'
+        run: |
+          techdocs-cli generate --no-docker
+          techdocs-cli publish --publisher-type awsS3 --storage-name backstage-techdocs-<your-name> --entity default/Component/my-component
