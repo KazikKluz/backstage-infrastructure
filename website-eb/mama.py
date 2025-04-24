@@ -1,26 +1,17 @@
+import pulumi
+import pulumi_aws as aws
 import json
 import zipfile
 import os
 
-import pulumi
-import pulumi_aws as aws
-
-
+# Configuration variables
+app_name = "natura"
+env_name = "natura-env"
 # Correct stack for eu-west-1
 solution_stack_name = "64bit Amazon Linux 2023 v4.5.0 running Docker"
 # Replace with your public Docker Hub image (e.g., "nginx:latest")
-# docker_image = "x00192532/natours"
-# region = "eu-west-1"  # Your AWS region
-
-app_name = os.environ.get("NAME")
-env_name = os.environ.get("ENVIRONMENT_NAME")
-docker_image = os.environ.get("DOCKER_IMAGE")
-region = os.environ.get("REGION")
-port = os.environ.get("PORT")
-asg_min_size = os.environ.get("ASG_MIN_SIZE")
-asg_max_size = os.environ.get("ASG_MAX_SIZE")
-# Check if required environment variables are set
-
+docker_image = "yourusername/yourimage:tag"
+region = "eu-west-1"  # Your AWS region
 
 # Create an IAM role for Elastic Beanstalk service
 eb_service_role = aws.iam.Role(
@@ -119,10 +110,10 @@ dockerrun_content = {
     },
     "Ports": [
         {
-            "ContainerPort": port
+            "ContainerPort": 80  # Adjust based on your application's port
         }
     ],
-    "Logging": "/var/log/app"
+    "Logging": "/var/log/nginx"
 }
 
 # Save Dockerrun.aws.json to a zip file for Elastic Beanstalk
@@ -173,12 +164,12 @@ env = aws.elasticbeanstalk.Environment(
         aws.elasticbeanstalk.EnvironmentSettingArgs(
             namespace="aws:autoscaling:asg",
             name="MinSize",
-            value=asg_min_size
+            value="1"
         ),
         aws.elasticbeanstalk.EnvironmentSettingArgs(
             namespace="aws:autoscaling:asg",
             name="MaxSize",
-            value=asg_max_size
+            value="4"
         ),
         aws.elasticbeanstalk.EnvironmentSettingArgs(
             namespace="aws:elasticbeanstalk:environment",
@@ -209,14 +200,7 @@ env = aws.elasticbeanstalk.Environment(
                 "CloudWatchMetrics": {
                     "Environment": {
                         "ApplicationRequestsTotal": 60,
-                        "ApplicationRequests5xx": 60,
-                        "ApplicationRequests4xx": 60,
-                        "ApplicationLatencyP99": 60
-                    },
-                    "Instance": {
-                        "LoadAverage1min": 60,
-                        "RootFilesystemUtil": 60,
-                        "CPUUtilization": 60
+                        "ApplicationRequests5xx": 60
                     }
                 },
                 "Version": 1
