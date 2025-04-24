@@ -6,9 +6,6 @@ import pulumi
 import pulumi_aws as aws
 
 
-# Configuration variables
-# app_name = "natours"
-# env_name = "natours-env"
 # Correct stack for eu-west-1
 solution_stack_name = "64bit Amazon Linux 2023 v4.5.0 running Docker"
 # Replace with your public Docker Hub image (e.g., "nginx:latest")
@@ -74,7 +71,11 @@ aws.iam.RolePolicyAttachment(
     role=eb_instance_role.name,
     policy_arn="arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier"
 )
-
+aws.iam.RolePolicyAttachment(
+    "eb-cloudwatch-policy",
+    role=eb_instance_role.name,
+    policy_arn="arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+)
 # Create an instance profile for EC2 instances
 eb_instance_profile = aws.iam.InstanceProfile(
     "eb-instance-profile",
@@ -167,6 +168,33 @@ env = aws.elasticbeanstalk.Environment(
             namespace="aws:autoscaling:launchconfiguration",
             name="IamInstanceProfile",
             value=eb_instance_profile.name
+        ),
+        # Enable enhanced health reporting
+        aws.elasticbeanstalk.EnvironmentSettingArgs(
+            namespace="aws:elasticbeanstalk:healthreporting:system",
+            name="SystemType",
+            value="enhanced"
+        ),
+        # Configure CloudWatch custom metrics
+        aws.elasticbeanstalk.EnvironmentSettingArgs(
+            namespace="aws:elasticbeanstalk:healthreporting:system",
+            name="ConfigDocument",
+            value=json.dumps({
+                "CloudWatchMetrics": {
+                    "Environment": {
+                        "ApplicationRequestsTotal": 60,
+                        "ApplicationRequests5xx": 60,
+                        "ApplicationRequests4xx": 60,
+                        "ApplicationLatencyP99": 60
+                    },
+                    "Instance": {
+                        "LoadAverage1min": 60,
+                        "RootFilesystemUtil": 60,
+                        "CPUUtilization": 60
+                    }
+                },
+                "Version": 1
+            })
         )
     ]
 )
