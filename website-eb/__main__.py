@@ -8,9 +8,6 @@ import pulumi_aws as aws
 
 # Correct stack for eu-west-1
 solution_stack_name = "64bit Amazon Linux 2023 v4.5.0 running Docker"
-# Replace with your public Docker Hub image (e.g., "nginx:latest")
-# docker_image = "x00192532/natours"
-# region = "eu-west-1"  # Your AWS region
 
 app_name = os.environ.get("NAME")
 env_name = os.environ.get("ENVIRONMENT_NAME")
